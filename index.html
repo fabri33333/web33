@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proyecto Web - Premios</title>
+    <style>
+        /* Estilos generales */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #1f1f1f;
+            color: #f1f1f1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        h1, h2 {
+            color: #00d1b2;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            font-size: 3rem;
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+
+        p {
+            font-size: 1.5rem;
+            margin: 10px 0;
+        }
+
+        #counter {
+            font-size: 1.25rem;
+            margin-bottom: 20px;
+        }
+
+        /* Estilo del botón */
+        button {
+            background-color: #00d1b2;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 20px;
+            margin-left: 10px;
+        }
+
+        button:disabled {
+            background-color: #666;
+            cursor: not-allowed;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #00a896;
+        }
+
+        /* Tabla de premios */
+        table {
+            width: 100%;
+            max-width: 600px;
+            border-collapse: collapse;
+            margin-top: 40px;
+        }
+
+        table, th, td {
+            border: 1px solid #00d1b2;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: center;
+            font-size: 1.2rem;
+        }
+
+        th {
+            background-color: #00d1b2;
+            color: #fff;
+        }
+
+        td {
+            background-color: #2d2d2d;
+        }
+
+        #pointsDisplay {
+            background-color: #2d2d2d;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.5rem;
+            margin-top: 20px;
+        }
+
+        /* Estilos para FAQs */
+        .faq {
+            max-width: 600px;
+            margin-top: 40px;
+            background-color: #2d2d2d;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .faq h3 {
+            color: #00d1b2;
+            cursor: pointer;
+        }
+
+        .faq-content {
+            display: none;
+            margin-top: 10px;
+        }
+
+        /* Estilos para el modal del certificado */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0,0,0);
+            background-color: rgba(0,0,0,0.4);
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: #2d2d2d;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #00d1b2;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: white;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .certificate {
+            margin-top: 20px;
+            font-size: 1.5rem;
+            color: #00d1b2;
+        }
+
+        /* Temporizador visual */
+        #timerBar {
+            width: 100%;
+            background-color: #666;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+
+        #timerFill {
+            height: 20px;
+            width: 100%;
+            background-color: #00d1b2;
+            border-radius: 5px;
+            transition: width 1s;
+        }
+
+        /* Estilos para crear usuario */
+        #createUserSection {
+            margin-top: 20px;
+        }
+
+        #userNameInput {
+            padding: 10px;
+            border: 1px solid #00d1b2;
+            border-radius: 5px;
+            width: 200px;
+            font-size: 1rem;
+        }
+    </style>
+    
+    <script>
+        function checkFirstTime() {
+            if (!localStorage.getItem("firstTime")) {
+                localStorage.setItem("firstTime", "false");
+                localStorage.setItem("points", 3);
+                localStorage.setItem("level", 1);
+                localStorage.setItem("lastClaimTime", Date.now());
+                localStorage.setItem("lastLogin", Date.now());
+                localStorage.setItem("consecutiveDays", 0);
+                alert("¡Bienvenido! Has recibido 3 puntos por primera vez.");
+            }
+            updatePoints();
+        }
+
+        function updatePoints() {
+            let lastClaimTime = localStorage.getItem("lastClaimTime");
+            let currentTime = Date.now();
+            let timeDifference = currentTime - lastClaimTime;
+
+            const fiveHoursInMs = 5 * 60 * 60 * 1000;
+            let timeRemaining = fiveHoursInMs - timeDifference;
+
+            // Verificar si el usuario ha ingresado en días consecutivos
+            let lastLogin = localStorage.getItem("lastLogin");
+            let lastLoginDate = new Date(parseInt(lastLogin));
+            let today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            if (lastLoginDate < today) {
+                // Si es un nuevo día, incrementar días consecutivos
+                let consecutiveDays = parseInt(localStorage.getItem("consecutiveDays")) || 0;
+                consecutiveDays++;
+                localStorage.setItem("consecutiveDays", consecutiveDays);
+                localStorage.setItem("lastLogin", Date.now());
+
+                // Añadir un punto extra por día consecutivo
+                let points = parseInt(localStorage.getItem("points")) || 0;
+                points += 1;
+                localStorage.setItem("points", points);
+                alert("¡Has ganado 1 punto extra por ingresar hoy!");
+            }
+
+            if (timeRemaining <= 0) {
+                document.getElementById("counter").innerText = "¡Puedes reclamar tus puntos!";
+                document.getElementById("claimButton").disabled = false;
+            } else {
+                let hours = Math.floor(timeRemaining / (1000 * 60 * 60));
+                let minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+                let seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
+
+                document.getElementById("counter").innerText = 
+                    `Puedes reclamar puntos en ${hours}h ${minutes}m ${seconds}s.`;
+                document.getElementById("claimButton").disabled = true;
+
+                // Actualizar la barra de temporizador
+                let fillPercentage = (timeRemaining / fiveHoursInMs) * 100;
+                document.getElementById("timerFill").style.width = `${fillPercentage}%`;
+            }
+
+            displayPoints();
+            updateLevel(parseInt(localStorage.getItem("points")));
+        }
+
+        function displayPoints() {
+            const points = parseInt(localStorage.getItem("points")) || 0;
+            document.getElementById("points").innerText = points; // Mostrar puntos totales
+        }
+
+        function claimPoints() {
+            const points = parseInt(localStorage.getItem("points")) || 0;
+            const newPoints = points + 5; // Sumar 5 puntos al reclamar
+            localStorage.setItem("points", newPoints);
+            localStorage.setItem("lastClaimTime", Date.now());
+            displayPoints();
+            alert("Has reclamado 5 puntos.");
+            updatePoints();
+        }
+
+        function claimPrize(prizePoints, prizeName) {
+            let points = parseInt(localStorage.getItem("points")) || 0;
+            if (points >= prizePoints) {
+                points -= prizePoints; // Restar puntos
+                localStorage.setItem("points", points);
+                displayPoints();
+                showCertificate(prizeName); // Mostrar certificado
+            } else {
+                alert("No tienes suficientes puntos para reclamar este premio.");
+            }
+        }
+
+        function showCertificate(prizeName) {
+            const modal = document.getElementById('modal');
+            const certificateText = document.getElementById('certificateText');
+            certificateText.innerText = `¡Válido por el premio: ${prizeName}!`;
+            modal.style.display = "block";
+        }
+
+        function createUser() {
+            const userNameInput = document.getElementById("userNameInput");
+            const userName = userNameInput.value.trim();
+            if (userName) {
+                localStorage.setItem("userName", userName); // Guardar nombre de usuario
+                document.getElementById("welcomeMessage").innerText = `¡Bienvenido, ${userName}!`;
+                document.getElementById("createUserSection").style.display = "none"; // Ocultar sección de crear usuario
+                document.getElementById("pointsDisplay").style.display = "block"; // Mostrar puntos
+                updatePoints();
+            } else {
+                alert("Por favor, ingresa un nombre de usuario.");
+            }
+        }
+
+        function updateLevel(points) {
+            let level = 1;
+            if (points >= 100) level = 2;
+            if (points >= 200) level = 3;
+            // Actualizar lógica de nivel según puntos
+            document.getElementById("levelDisplay").innerText = `Nivel: ${level}`;
+        }
+
+        // Inicializar
+        window.onload = function() {
+            checkFirstTime();
+            setInterval(updatePoints, 1000); // Actualizar cada segundo
+        }
+
+        // Cerrar el modal al hacer clic en la 'x'
+        document.getElementsByClassName('close')[0].onclick = function() {
+            document.getElementById('modal').style.display = "none";
+        }
+
+        // Cerrar el modal al hacer clic fuera del contenido
+        window.onclick = function(event) {
+            const modal = document.getElementById('modal');
+            if (event.target === modal) {
+                modal.style.display = "none";
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>Bienvenido a Tu Proyecto Web</h1>
+
+    <div id="createUserSection">
+        <input type="text" id="userNameInput" placeholder="Ingresa tu nombre" />
+        <button onclick="createUser()">Crear Usuario</button>
+    </div>
+    
+    <div id="welcomeMessage" style="display:none;"></div>
+    <div id="pointsDisplay" style="display:none;">
+        <span id="points">0</span> puntos
+        <div id="levelDisplay">Nivel: 1</div>
+    </div>
+
+    <div id="counter">Puedes reclamar puntos en 5h 0m 0s.</div>
+    <div id="timerBar"><div id="timerFill"></div></div>
+    
+    <button id="claimButton" onclick="claimPoints()" disabled>Reclamar Puntos</button>
+
+    <h2>Premios Disponibles</h2>
+    <table>
+        <tr>
+            <th>Premio</th>
+            <th>Puntos</th>
+            <th>Acción</th>
+        </tr>
+        <tr>
+            <td>Besito</td>
+            <td>10</td>
+            <td><button onclick="claimPrize(10, 'Besito')">Reclamar</button></td>
+        </tr>
+        <tr>
+            <td>Una Cita Romántica</td>
+            <td>50</td>
+            <td><button onclick="claimPrize(50, 'Una Cita Romántica')">Reclamar</button></td>
+        </tr>
+        <tr>
+            <td>Una Cena Romántica</td>
+            <td>100</td>
+            <td><button onclick="claimPrize(100, 'Una Cena Romántica')">Reclamar</button></td>
+        </tr>
+        <tr>
+            <td>Un Masaje</td>
+            <td>200</td>
+            <td><button onclick="claimPrize(200, 'Un Masaje')">Reclamar</button></td>
+        </tr>
+        <tr>
+            <td>Un Fin de Semana en un Hotel</td>
+            <td>300</td>
+            <td><button onclick="claimPrize(300, 'Un Fin de Semana en un Hotel')">Reclamar</button></td>
+        </tr>
+        <tr>
+            <td>Un Día de Spa</td>
+            <td>350</td>
+            <td><button onclick="claimPrize(350, 'Un Día de Spa')">Reclamar</button></td>
+        </tr>
+        <tr>
+            <td>Un Viaje de Fin de Semana</td>
+            <td>500</td>
+            <td><button onclick="claimPrize(500, 'Un Viaje de Fin de Semana')">Reclamar</button></td>
+        </tr>
+        <tr>
+            <td>Una Noche Especial</td>
+            <td>5000</td>
+            <td><button onclick="claimPrize(5000, 'Una Noche Especial')">Reclamar</button></td>
+        </tr>
+        <tr>
+            <td>Sorpresa en la Ducha</td>
+            <td>100</td>
+            <td><button onclick="claimPrize(100, 'Sorpresa en la Ducha')">Reclamar</button></td>
+        </tr>
+        <tr>
+            <td>Noche de Pasión</td>
+            <td>300</td>
+            <td><button onclick="claimPrize(300, 'Noche de Pasión')">Reclamar</button></td>
+        </tr>
+    </table>
+
+    <div class="faq">
+        <h3 onclick="toggleFAQ('faq1')">¿Cómo puedo obtener puntos?</h3>
+        <div id="faq1" class="faq-content" style="display:none;">
+            <p>Puedes obtener puntos al reclamar premios y al ingresar diariamente.</p>
+        </div>
+        <h3 onclick="toggleFAQ('faq2')">¿Qué premios puedo canjear?</h3>
+        <div id="faq2" class="faq-content" style="display:none;">
+            <p>Los premios varían desde besitos hasta viajes de fin de semana.</p>
+        </div>
+    </div>
+
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="document.getElementById('modal').style.display='none'">&times;</span>
+            <p class="certificate" id="certificateText">¡Has reclamado tu premio!</p>
+        </div>
+    </div>
+</body>
+</html>
